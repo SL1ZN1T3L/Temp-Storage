@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="{{ theme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#4a6fa5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Временное хранилище</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/preview.css') }}">
+    
+    <!-- Удаляем неиспользуемые библиотеки для Office документов -->
+    <!-- Используем Microsoft Office Online Viewer вместо клиентских библиотек -->
+    
+    <script src="{{ url_for('static', filename='js/preview.js') }}" defer></script>
+    <style>
+        /* Если здесь есть стили для .docx-wrapper, .excel-wrapper, .pptx-wrapper, их нужно удалить */
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block title %}Временное хранилище{% endblock %}
+
+    {% block content %}
+    <div class="storage-info">
+        <div class="storage-progress">
+            <div class="progress-bar" style="width: {{ used_percent }}%"></div>
+        </div>
+        <p>Использовано: {{ "%.2f"|format(total_size / (1024 * 1024)) }} MB из 500 MB</p>
+    </div>
+
+    <div class="file-upload">
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="file" id="file-input" multiple>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Загрузить файлы
+            </button>
+        </form>
+    </div>
+
+    <div class="files-list">
+        <h2>Файлы в хранилище</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Имя файла</th>
+                    <th>Расширение файла</th>
+                    <th style="padding-left: 15px;">Размер</th>
+                    <th style="padding-left: 15px;">Дата изменения</th>
+                    <th style="padding-left: 15px;">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr>
+                    <td>{{ file.name.rsplit('.', 1)[0] }}</td>
+                    <td style="padding-left: 15px;">
+                        {% set ext = file.name.split('.')[-1]|lower if '.' in file.name else '' %}
+                        {{ ext }}
+                    </td>
+                    <td style="padding-left: 15px;">{{ "%.2f"|format(file.size / (1024 * 1024)) }} MB</td>
+                    <td style="padding-left: 15px;">{{ file.modified }}</td>
+                    <td class="file-actions" style="padding-left: 15px;">
+                        <a href="{{ url_for('download_file', link_id=link_id, filename=file.name) }}" 
+                           class="btn btn-download" title="Скачать">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        {% set ext = file.name.split('.')[-1]|lower %}
+                        {% set non_office_previewable = [
+                            'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff', 'tif',
+                            'pdf',
+                            'txt', 'md', 'csv', 'tsv', 'json', 'xml', 'html', 'htm', 'css', 'js',
+                            'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'rs', 'ts',
+                            'jsx', 'tsx', 'sql', 'yml', 'yaml', 'ini', 'conf', 'config', 'sh', 'bat', 'ps1',
+                            'tex', 'bib', 'log', 'diff', 'patch'
+                        ] %}
+                        {% if ext in non_office_previewable %}
+                        <button class="btn btn-preview" data-filename="{{ file.name|e|escapejs }}" title="Предпросмотр">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-delete" 
+                                onclick="deleteFile('{{ file.name }}')" 
+                                title="Удалить">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if remaining_time %}
+    <div class="expires-at">Срок действия до: {{ expires_at }} (осталось: {{ remaining_time }})</div>
+    {% else %}
+    <div class="expires-at">Срок действия до: {{ expires_at }}</div>
+    {% endif %}
+
+    <script>
+        window.linkId = '{{ link_id }}';
+    </script>
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="{{ theme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#4a6fa5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='image/favicon.ico') }}">
+    <title>Временное хранилище</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/preview.css') }}">
+    
+    <!-- Удаляем неиспользуемые библиотеки для Office документов -->
+    
+    <!-- Скрипты библиотек предпросмотра будут добавлены в конце body -->
+    <style>
+        :root[data-theme="light"] {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --hover-bg: #f8f9fa;
+            --shadow-color: rgba(0,0,0,0.1);
+            --info-color: #17a2b8;
+            --info-hover-color: #138496;
+        }
+        
+        :root[data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --hover-bg: #3d3d3d;
+            --shadow-color: rgba(0,0,0,0.3);
+            --info-color: #17a2b8;
+            --info-hover-color: #138496;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            table-layout: fixed; /* Добавлено для выравнивания столбцов */
+        }
+        
+        .file-table th {
+            padding: 12px 10px; /* Оставляем padding по умолчанию */
+            text-align: left;
+        }
+
+        /* Стили для основной строки заголовков */
+        .file-table thead tr:first-child th {
+            background-color: var(--card-bg); /* Фон для перекрытия контента */
+            position: sticky; /* Делаем заголовки липкими */
+            top: 0; /* Прилипаем к верху контейнера */
+            z-index: 2; /* Устанавливаем z-index выше, чем у строки фильтров */
+        }
+        
+        .file-table td {
+            padding: 10px 8px;
+            /* border-bottom: 1px solid var(--border-color); */
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+        }
+        
+        .file-table {
+            color: var(--text-color);
+        }
+        
+        .file-table th,
+        .file-table td {
+            border-color: var(--border-color);
+            vertical-align: top; 
+            padding: 12px 8px;
+            word-wrap: break-word; /* Добавлено для переноса длинных слов */
+        }
+        
+        .file-table tr:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* Ensure border remains consistent on hover */
+        .file-table tr:hover td {
+            border-bottom-color: var(--border-color);
+        }
+        
+        .file-table th:nth-child(1),
+        .file-table td:nth-child(1) {
+            width: 40px;
+            min-width: 40px;
+            max-width: 40px;
+            padding-left: 0;
+            padding-right: 0;
+            text-align: center;
+        }
+
+        .file-table th:nth-child(2),
+        .file-table td:nth-child(2) {
+             overflow: hidden;
+             text-overflow: ellipsis;
+             white-space: nowrap; /* Предотвращаем перенос имени файла */
+        }
+
+        .file-table th:nth-child(3), 
+        .file-table td:nth-child(3) {
+            width: 150px; 
+            max-width: 150px; 
+            padding-left: 10px;
+            padding-right: 10px;
+            white-space: normal; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top; 
+        }
+
+        .file-table th:nth-child(4),
+        .file-table td:nth-child(4) {
+            width: 100px;
+            max-width: 100px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .file-table th:nth-child(5),
+        .file-table td:nth-child(5) {
+            width: 160px;
+            max-width: 160px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .file-table th:nth-child(6),
+        .file-table td:nth-child(6) {
+            width: 120px;
+            max-width: 120px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            padding-left: 10px;
+        }
+        
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+        
+        .theme-switch:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-switch i {
+            font-size: 20px;
+            color: var(--text-color);
+        }
+        
+        .storage-info {
+            margin-bottom: 10px;
+        }
+        .storage-progress {
+            margin-bottom: 10px;
+        }
+        .storage-progress .progress {
+            height: 25px;
+            background-color: #f5f5f5;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .storage-progress .progress-bar {
+            font-size: 14px;
+            line-height: 25px;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            color: white;
+            font-weight: bold;
+            background: linear-gradient(to right, 
+                #28a745 0%, 
+                #28a745 15%, 
+                #4ca743 20%,
+                #70a742 25%,
+                #94a740 30%,
+                #b8a73f 35%,
+                #dca73d 40%,
+                #ffc107 45%,
+                #ff9f07 50%,
+                #ff7d07 55%,
+                #ff5b07 60%,
+                #ff3907 65%,
+                #dc3545 70%,
+                #dc3545 100%
+            );
+            background-size: var(--bg-size, 100%) 100%;
+            background-position: 0 0;
+        }
+        .storage-progress .progress-bar[aria-valuenow="0"],
+        .storage-progress .progress-bar[aria-valuenow="0.0"] {
+            min-width: 0;
+            padding: 0;
+        }
+        .storage-progress .progress-bar[aria-valuenow^="0"],
+        .storage-progress .progress-bar[aria-valuenow^="1"],
+        .storage-progress .progress-bar[aria-valuenow^="2"],
+        .storage-progress .progress-bar[aria-valuenow^="3"] {
+            background-color: #28a745;
+        }
+        .storage-progress .progress-bar[aria-valuenow^="4"],
+        .storage-progress .progress-bar[aria-valuenow^="5"],
+        .storage-progress .progress-bar[aria-valuenow^="6"] {
+            background-color: #ffc107;
+        }
+        .storage-progress .progress-bar[aria-valuenow^="7"],
+        .storage-progress .progress-bar[aria-valuenow^="8"],
+        .storage-progress .progress-bar[aria-valuenow^="9"],
+        .storage-progress .progress-bar[aria-valuenow^="100"] {
+            background-color: #dc3545;
+        }
+        .storage-text {
+            font-size: 16px;
+            font-weight: bold;
+            padding: 5px;
+        }
+        .files-list {
+            margin-top: 20px;
+            position: relative;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        
+        .select-all-container {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            padding-left: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .delete-selected {
+            margin-bottom: 10px;
+            padding: 5px 15px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none;
+        }
+        .delete-selected:hover {
+            background-color: #c82333;
+        }
+        .download-selected {
+            margin-bottom: 10px;
+            padding: 5px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none;
+        }
+        .download-selected:hover {
+            background-color: #218838;
+        }
+        .file-checkbox {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+        }
+        .upload-progress {
+            display: none;
+            margin-top: 10px;
+        }
+        .upload-progress .progress {
+            height: 20px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .upload-progress .progress-bar {
+            background: #4a90e2;
+            transition: width 0.2s ease;
+            background-image: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.15) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.15) 50%,
+                rgba(255, 255, 255, 0.15) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 40px 40px;
+            animation: progress-bar-stripes 1s linear infinite;
+            height: 100%;
+        }
+        .upload-progress .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        @keyframes progress-bar-stripes {
+            from { background-position: 40px 0; }
+            to { background-position: 0 0; }
+        }
+        .btn-download, .btn-delete, .btn-preview {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+        }
+        .btn-download {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-download:hover {
+            background-color: #218838;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+        .btn-preview {
+            background-color: var(--info-color);
+            color: white;
+        }
+        .btn-preview:hover {
+            background-color: var(--info-hover-color, #138496);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+        .file-preview-button {
+            display: none;
+        }
+        /* Стили для всплывающих уведомлений */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+            border: 1px solid var(--border-color);
+            max-width: 400px;
+        }
+
+        .toast.error {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .toast.success {
+            border-left: 4px solid #2ecc71;
+        }
+
+        .toast-icon {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .toast-message {
+            flex-grow: 1;
+            font-size: 14px;
+        }
+
+        .toast-close {
+            cursor: pointer;
+            opacity: 0.7;
+            margin-left: 12px;
+            font-size: 18px;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .expires-at {
+            display: none;
+        }
+        
+        .page-title {
+            text-align: center;
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-title h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-color);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .page-title::before {
+            display: none;
+        }
+
+        @keyframes rainbow-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: -200% 50%;
+            }
+        }
+        
+        @keyframes rainbow-border {
+            0% {left: -100%;}
+            100% {left: 100%;}
+        }
+        
+        .page-title::after {
+            display: none;
+        }
+
+        /* НОВАЯ РЕАЛИЗАЦИЯ: простая и стабильная */
+        .rainbow-border {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, 
+                red, orange, yellow, green, blue, indigo, violet, red);
+            background-size: 200% 100%;
+            animation: gradientMove 6s linear infinite;
+            z-index: 2;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .drop-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background-color: var(--bg-color);
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .drop-area.highlight {
+            border-color: #4caf50;
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+        
+        .drop-area-content {
+            width: 100%;
+        }
+        
+        .drop-area i {
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        
+        .drop-area p {
+            margin: 10px 0;
+            color: var(--text-color);
+        }
+        
+        .file-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: -1;
+        }
+
+        /* Стили для обратного отсчета времени */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .countdown-timer {
+            padding: 10px 15px;
+            padding-bottom: 0px !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            gap: 5px;
+        }
+        
+        .countdown-timer.expiring {
+            color: var(--danger-color);
+        }
+        
+        .countdown-timer i {
+            margin-right: 5px;
+        }
+        
+        .countdown-unit {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 5px;
+        }
+        
+        .countdown-value {
+            font-size: 1.2rem;
+            line-height: 1;
+            font-weight: 700;
+        }
+        
+        .countdown-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        /* Стили для кнопки "Поделиться" */
+        .page-share-trigger {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .page-share-trigger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+        
+        .share-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .share-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .share-modal-content {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            position: relative;
+        }
+        
+        .share-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        
+        .share-modal-close:hover {
+            opacity: 1;
+        }
+        
+        .share-link-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .share-options {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .share-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .share-option:hover {
+            transform: translateY(-3px);
+        }
+        
+        .share-option i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            padding: 12px;
+            border-radius: 50%;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .share-option span {
+            font-size: 12px;
+            color: var(--text-color);
+        }
+
+        /* Улучшенные стили для списка файлов */
+        .file-item {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .file-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+        
+        .file-type-icon {
+            font-size: 18px;
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+            color: var(--primary-color);
+        }
+        
+        .file-name {
+            display: flex;
+            align-items: center;
+        }
+
+        a {
+            text-decoration: none
+        }
+
+        /* Адаптивный дизайн для мобильных устройств */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                padding-left: 10px;
+            }
+
+            .h2, h2 {
+            font-size: 18px;
+            }
+
+            .page-title h1 {
+                font-size: 24px;
+            }
+            
+            .file-actions {
+                flex-direction: row;
+                align-items: center;
+                gap: 3px;
+            }
+            
+            .file-actions button, .file-actions a {
+                margin: 2px;
+                width: 30px;
+                height: 30px;
+            }
+            
+            .share-modal-content {
+                width: 90%;
+                padding: 15px;
+            }
+            
+            .share-options {
+                flex-wrap: wrap;
+            }
+            
+            .share-option {
+                margin: 0 10px 10px;
+                width: 60px;
+            }
+            
+            .countdown-timer {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .countdown-unit {
+                margin: 5px;
+            }
+            
+            .file-item td {
+                padding: 8px 5px;
+            }
+            
+            .btn {
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .file-name {
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .upload-progress {
+                padding: 8px;
+            }
+            
+            .file-upload-item {
+                padding: 8px;
+            }
+            
+            .drop-area {
+                padding: 15px;
+            }
+            
+            .page-share-trigger {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .storage-progress {
+                height: 15px;
+            }
+
+            /* Исправление для таблицы файлов на мобильных */
+            .files-list {
+                overflow-x: auto;
+            }
+            .file-table,
+            .file-table thead,
+            .file-table tbody,
+            .file-table tr,
+            .file-table th,
+            .file-table td {
+                display: revert !important;
+                width: revert !important;
+                max-width: revert !important;
+                table-layout: auto !important;
+            }
+            .mt-deletebutton {
+            margin-top: 1rem !important
+        }
+        }
+        
+        /* Улучшения для доступности */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+        
+        button, a {
+            transition: all 0.2s ease;
+        }
+        
+        button:focus, a:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        .btn:active, .page-share-trigger:active {
+            transform: scale(0.95);
+        }
+
+        /* Preview modal styles */
+        .preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .preview-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .preview-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        
+        .preview-close:hover {
+            opacity: 1;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .preview-iframe {
+            width: 80vw;
+            height: 80vh;
+            border: none;
+            border-radius: 5px;
+            background-color: white;
+        }
+        
+        .preview-filename {
+            position: absolute;
+            bottom: -30px;
+            color: white;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .preview-controls {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        
+        .preview-control {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .preview-control:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .preview-text {
+            background: white;
+            color: #333;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 80vw;
+            max-height: 80vh;
+            overflow: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .file-name-wrapper {
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .file-type-icon {
+            font-size: 16px;
+            margin-right: 8px;
+            min-width: 18px;
+            text-align: center;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+        
+        .file-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1;
+        }
+
+        /* Стили для полей фильтрации */
+        .filter-input {
+            width: 95%;
+            padding: 4px 8px;
+            margin: 0;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 12px;
+        }
+        .file-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        }
+        /* Стили для строки фильтров */
+        .file-table thead tr.filter-row th {
+            padding-top: 5px;
+            padding-bottom: 10px;
+            position: sticky; /* Делаем строку фильтров липкой */
+            top: 48px; /* Располагаем под основной строкой заголовков (подбираемое значение) */
+            background-color: var(--card-bg); /* Фон, чтобы контент не просвечивал */
+            z-index: 1; /* Чтобы были под основной строкой заголовков */
+            vertical-align: top; /* Align filter input to top */
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .filter-row th:nth-child(1) { width: 40px; min-width: 40px; max-width: 40px; }
+        .filter-row th:nth-child(2) { /* Автоматическая ширина */ }
+        .filter-row th:nth-child(3) { width: 150px; max-width: 150px; }
+        .filter-row th:nth-child(4) { width: 100px; max-width: 100px; }
+        .filter-row th:nth-child(5) { width: 160px; max-width: 160px; }
+        .filter-row th:nth-child(6) { width: 120px; max-width: 120px; }
+        
+        .file-table th:nth-child(4), 
+        .file-table td:nth-child(4),
+        .file-table th:nth-child(5), 
+        .file-table td:nth-child(5) {
+             padding-left: 10px;
+        }
+
+        .mt-deletebutton {
+            margin-top: -2rem
+        }
+    </style>
+</head>
+<body>
+    <!-- Добавляем контейнер для уведомлений -->
+    <div class="toast-container"></div>
+        <button class="theme-switch" title="Переключить тему" onclick="switchTheme(this)">
+            <i class="fas fa-moon"></i>
+        </button>
+
+        <script>
+        function switchTheme(button) {
+            // Отключаем кнопку
+            button.disabled = true;
+            
+            // Получаем текущую тему (предположим, хранится в localStorage)
+            let currentTheme = localStorage.getItem('theme') || 'light';
+            let newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            // Применяем новую тему
+            document.body.className = newTheme; // Пример: меняем класс body
+            localStorage.setItem('theme', newTheme);
+            
+            // Обновляем иконку кнопки
+            button.querySelector('i').className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+            
+            // Включаем кнопку через 5 секунд
+            setTimeout(() => {
+                button.disabled = false;
+            }, 2000);
+            
+            // Если есть серверный запрос, можно добавить его здесь
+            // Например: fetch('/set-theme', { method: 'POST', body: JSON.stringify({ theme: newTheme }) });
+        }
+        </script>
+    
+    <div class="container mt-4">
+        <div class="page-title">
+            <div class="rainbow-border"></div>
+            <h1><i class="fas fa-cloud-upload-alt mr-2"></i> Временное хранилище</h1>
+            <!-- Добавляем анимированный счетчик оставшегося времени -->
+            <div class="countdown-timer" id="countdownTimer">
+                <i class="far fa-clock"></i>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="countDays">00</span>
+                    <span class="countdown-label">дней</span>
+                </div>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="countHours">00</span>
+                    <span class="countdown-label">часов</span>
+                </div>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="countMinutes">00</span>
+                    <span class="countdown-label">минут</span>
+                </div>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="countSeconds">00</span>
+                    <span class="countdown-label">секунд</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="storage-info">
+                    <div class="storage-progress">
+                        <div class="progress">
+                            <div class="progress-bar" 
+                                 style="width: {{ '%.1f' % used_percent }}%"
+                                 role="progressbar" 
+                                 aria-valuenow="{{ '%.1f' % used_percent }}"
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ '%.1f' % used_percent }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="storage-text">
+                        Использовано: {{ '%.2f' % used_space }} MB из 500 MB
+                    </div>
+                    <div class="mt-deletebutton d-flex justify-content-end">
+                        <button id="delete-storage" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Удалить хранилище
+                        </button>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Загрузка файлов</h5>
+                <div id="dropArea" class="drop-area mb-3">
+                    <div class="drop-area-content">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                        <p>Перетащите файлы сюда или нажмите для выбора</p>
+                        <p class="text-muted small">Максимальный размер файла: 500 МБ</p>
+                        <p class="text-muted small">Разрешенные типы файлов: {{ ', '.join(allowed_extensions)|e }}</p>
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <input type="file" class="file-input" id="fileInput" multiple>
+                            <button type="button" class="btn btn-primary mt-" id="selectFilesBtn">Выбрать файлы</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="upload-progress">
+                    <div class="progress mt-2">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text"></div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="toggleFilesList">
+                            Показать список файлов <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="files-upload-list mt-2" style="display: none;">
+                        <!-- Здесь будет отображаться список загружаемых файлов -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="files-list">
+                    <h2>Файлы в хранилище</h2>
+                    <div class="select-all-container">
+                        <input type="checkbox" id="select-all" class="file-checkbox">
+                        <label for="select-all">Выбрать все</label>
+                        <button id="delete-selected" class="delete-selected">Удалить выбранные</button>
+                        <button id="download-selected" class="download-selected">
+                            <i class="fas fa-download"></i> Скачать выбранные
+                        </button>
+                    </div>
+                    <div style="overflow: auto; max-height: 70vh;">
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th></th> 
+                                    <th>Имя файла</th>
+                                    <th>Расширение<br>файла</th>
+                                    <th>Размер</th>
+                                    <th>Дата изменения</th>
+                                    <th>Действия</th>
+                                </tr>
+                                <tr class="filter-row">
+                                    <th></th>
+                                    <th>
+                                        <input type="text" id="filterFileName" class="filter-input" placeholder="Фильтр по имени" list="fileNameList">
+                                        <datalist id="fileNameList"></datalist>
+                                    </th>
+                                    <th>
+                                        <input type="text" id="filterFileExt" class="filter-input" placeholder="Фильтр" list="fileExtList">
+                                        <datalist id="fileExtList"></datalist>
+                                    </th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="fileTableBody">
+                                {% for file in files %}
+                                <tr class="file-item">
+                                    <td>
+                                        <input type="checkbox" class="file-checkbox" data-filename="{{ file.raw_name|e|escapejs }}">
+                                    </td>
+                                    <td title="{{ file.name|e }}">
+                                        <div class="file-name-wrapper">
+                                            {% set ext = file.name.split('.')[-1]|lower if '.' in file.name else '' %}
+                                            <i class="file-type-icon {{ get_icon_class(ext) }}"></i>
+                                            <span class="file-text">{{ file.name.rsplit('.', 1)[0]|e }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set ext = file.name.split('.')[-1]|lower if '.' in file.name else '' %}
+                                        {{ ext|e }}
+                                    </td>
+                                    <td>{{ format_file_size(file.size) }}</td>
+                                    <td>{{ file.modified.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        <div class="file-actions">
+                                            <a href="{{ url_for('download_file', link_id=link_id, filename=file.raw_name) }}?download=true"
+                                               class="btn btn-download" title="Скачать" download>
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% if ext in previewable_extensions %}
+                                            <button class="btn btn-preview" data-filename="{{ file.raw_name|e|escapejs }}" title="Предпросмотр">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-delete" onclick="deleteFile('{{ file.raw_name|e|escapejs }}')" title="Удалить">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Добавляем кнопку "Поделиться" -->
+    <button class="page-share-trigger" id="pageShareTrigger" aria-label="Поделиться ссылкой">
+        <i class="fas fa-share-alt"></i>
+    </button>
+    
+    <!-- Добавляем модальное окно для поделиться -->
+    <div class="share-modal" id="shareModal">
+        <div class="share-modal-content">
+            <button class="share-modal-close" id="shareModalClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3>Поделиться хранилищем</h3>
+            <p>Скопируйте ссылку или поделитесь напрямую:</p>
+            <input type="text" class="share-link-input" id="shareLinkInput" readonly>
+            <button id="copyButton" class="btn btn-primary">Копировать ссылку</button>
+            
+            <div class="share-options">
+                <div class="share-option" id="shareWhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </div>
+                <div class="share-option" id="shareTelegram">
+                    <i class="fab fa-telegram-plane"></i>
+                    <span>Telegram</span>
+                </div>
+                <div class="share-option" id="shareEmail">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email</span>
+                </div>
+                <div class="share-option" id="shareQR">
+                    <i class="fas fa-qrcode"></i>
+                    <span>QR-код</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Добавляем модальное окно для предпросмотра -->
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-content">
+            <button class="preview-close" id="previewClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <!-- Контейнер для предпросмотра -->
+            <div id="previewContainer">
+                 <!-- Сюда будут рендериться docx, excel, pptx -->
+            </div>
+            <div class="preview-filename" id="previewFilename"></div>
+            <div class="preview-controls">
+                <button class="preview-control" id="previewPrev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="preview-control" id="previewNext">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const linkId = '{{ link_id }}';
+        let totalUploadSize = 0;
+        let currentUploadedSize = 0;
+        let uploadControllers = new Map(); // Map для хранения AbortController для каждого файла
+        
+        // Настройка Drag and Drop
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectFilesBtn = document.getElementById('selectFilesBtn');
+        
+        // Предотвращаем стандартное поведение браузера (открытие файла)
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Подсветка области при перетаскивании файлов
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('highlight');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('highlight');
+        }
+        
+        // Обработка сброшенных файлов
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFiles(files);
+            }
+        }
+        
+        // Обработка выбора файлов через кнопку
+        selectFilesBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                handleFiles(fileInput.files);
+            }
+        });
+        
+        // Функция обработки файлов
+        function handleFiles(files) {
+            if (files.length === 0) {
+                showToast('Пожалуйста, выберите файлы для загрузки', 'error');
+                return;
+            }
+            
+            const uploadProgress = document.querySelector('.upload-progress');
+            const progressBar = uploadProgress.querySelector('.progress-bar');
+            const filesList = document.querySelector('.files-upload-list');
+            uploadProgress.style.display = 'block';
+            filesList.innerHTML = ''; // Очищаем список
+            
+            // Получаем CSRF-токен из метатега
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            // Рассчитываем общий размер всех файлов
+            totalUploadSize = Array.from(files).reduce((total, file) => total + file.size, 0);
+            currentUploadedSize = 0;
+            
+            // Создаем список файлов
+            Array.from(files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-upload-item';
+                fileItem.id = `file-upload-${index}`;
+                fileItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <div class="file-info">
+                            <div class="file-name text-truncate" style="max-width: 300px;">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                        <div class="file-progress" style="width: 60%;">
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" id="progress-${index}"></div>
+                            </div>
+                            <div class="progress-text small text-muted mt-1" id="progress-text-${index}">Ожидание...</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger cancel-upload" data-index="${index}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                filesList.appendChild(fileItem);
+                
+                // Добавляем обработчик для кнопки отмены
+                fileItem.querySelector('.cancel-upload').addEventListener('click', function() {
+                    const fileIndex = this.getAttribute('data-index');
+                    cancelUpload(fileIndex);
+                });
+            });
+            
+            // Показываем список файлов
+            filesList.style.display = 'block';
+            document.getElementById('toggleFilesList').innerHTML = 'Скрыть список файлов <i class="fas fa-chevron-up"></i>';
+            
+            // Запускаем загрузку файлов
+            Array.from(files).forEach((file, index) => {
+                uploadFile(file, index);
+            });
+        }
+        
+        // Доработанная функция для toggle списка файлов
+        document.getElementById('toggleFilesList').addEventListener('click', function() {
+            const filesList = document.querySelector('.files-upload-list');
+            const isVisible = filesList.style.display !== 'none';
+            filesList.style.display = isVisible ? 'none' : 'block';
+            this.innerHTML = isVisible ? 
+                'Показать список файлов <i class="fas fa-chevron-down"></i>' : 
+                'Скрыть список файлов <i class="fas fa-chevron-up"></i>';
+        });
+        
+        async function uploadFile(file, index) {
+            try {
+                let currentChunkSize = 1024 * 1024; // 1MB chunks
+                const totalSize = file.size;
+                let uploadedSize = 0;
+                
+                // Ограничиваем максимальный размер файла
+                const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+                if (totalSize > MAX_FILE_SIZE) {
+                    updateFileStatus(index, 'error', `Файл слишком большой. Макс. размер: 500 MB`);
+                    return;
+                }
+                
+                // Безопасная проверка лимита хранилища
+                const usedSpace = Math.max(0, parseFloat('{{ used_space }}'));
+                const remaining = Math.max(0, 500 - usedSpace); // 500 MB - текущее использование
+                
+                // Гарантируем, что значения корректны
+                if (isNaN(remaining) || !isFinite(remaining)) {
+                    updateFileStatus(index, 'error', `Ошибка при проверке свободного места`);
+                    return;
+                }
+                
+                if (totalSize / (1024 * 1024) > remaining) {
+                    updateFileStatus(index, 'error', `Файл превысит лимит хранилища. Осталось: ${remaining.toFixed(2)} MB`);
+                    return;
+                }
+
+                // Создаем AbortController для этого файла
+                const controller = new AbortController();
+                uploadControllers.set(index, controller);
+
+                let chunkNumber = 0;
+                updateFileStatus(index, 'uploading', 'Начало загрузки...');
+                
+                // Создаем уникальный идентификатор сессии загрузки
+                const uploadSessionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                
+                while (uploadedSize < totalSize) {
+                    if (!uploadControllers.has(index)) {
+                        console.log(`Загрузка файла ${file.name} была отменена, выходим из цикла отправки`);
+                        
+                        // Пытаемся удалить частично загруженный файл
+                        try {
+                            await fetch(`/${linkId}/delete/${file.name}`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-Token': csrfToken
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Ошибка при удалении частично загруженного файла:', e);
+                        }
+                        
+                        return;
+                    }
+                    
+                    const chunk = file.slice(uploadedSize, Math.min(uploadedSize + currentChunkSize, totalSize));
+                    const formData = new FormData();
+                    formData.append('file', new Blob([chunk], { type: file.type }), file.name);
+                    formData.append('chunk', chunkNumber.toString());
+                    formData.append('chunks', Math.ceil(totalSize / currentChunkSize).toString());
+                    formData.append('total_size', totalSize.toString());
+                    formData.append('upload_session_id', uploadSessionId);
+
+                    let retries = 3;
+                    let uploaded = false;
+
+                    while (retries > 0 && !uploaded) {
+                        try {
+                            // Если загрузка отменена - выходим немедленно
+                            if (!uploadControllers.has(index)) {
+                                console.log(`Загрузка файла ${file.name} была отменена после запроса`);
+                                // Пытаемся удалить частично загруженный файл
+                                try {
+                                    await fetch(`/${linkId}/delete/${file.name}`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-Token': csrfToken
+                                        }
+                                    });
+                                } catch (deleteErr) {
+                                    console.error('Ошибка при удалении частично загруженного файла:', deleteErr);
+                                }
+                                return;
+                            }
+
+                            const response = await fetch(`/${linkId}/upload`, {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-CSRF-Token': csrfToken
+                                },
+                                signal: controller.signal
+                            });
+
+                            if (!response.ok) {
+                                // Добавляем логирование для 404 ошибки
+                                if (response.status === 404) {
+                                    console.error(`Ошибка 404 при загрузке чанка ${chunkNumber} для файла ${file.name}. URL: ${response.url}. Возможно, хранилище ${linkId} истекло или было удалено.`);
+                                    updateFileStatus(index, 'error', 'Ошибка: Хранилище не найдено или истекло');
+                                    uploadControllers.delete(index); // Прекращаем загрузку
+                                    return; // Выходим из функции uploadFile
+                                }
+                                
+                                if (response.status === 413) {
+                                    currentChunkSize = Math.floor(currentChunkSize / 2);
+                                    if (currentChunkSize < 64 * 1024) {
+                                        throw new Error('Невозможно уменьшить размер чанка дальше');
+                                    }
+                                    continue;
+                                }
+
+                                const contentType = response.headers.get('content-type');
+                                const errorData = contentType && contentType.includes('application/json') 
+                                    ? await response.json()
+                                    : { error: await response.text() };
+                                
+                                // Проверяем на ошибку превышения лимита
+                                if (response.status === 400 && errorData.error && 
+                                    (errorData.error.includes('Превышен лимит') || 
+                                     errorData.error.includes('превыш'))) {
+                                    updateFileStatus(index, 'error', 'Превышен лимит хранилища');
+                                    // Явно удаляем контроллер, чтобы прервать загрузку
+                                    uploadControllers.delete(index);
+                                    showToast('Превышен лимит хранилища. Загрузка отменена.', 'error');
+                                    return; // Выходим из функции, прекращая загрузку
+                                }
+                                
+                                // Обработка ошибки неразрешенного типа файла
+                                if (response.status === 400 && errorData.error && 
+                                    errorData.error.includes('Тип файла не разрешен')) {
+                                    const errorMessage = `Тип файла не разрешен для загрузки (разрешены только: ${document.querySelector('.drop-area .text-muted:nth-of-type(3)').textContent.split(': ')[1]})`;
+                                    updateFileStatus(index, 'error', errorMessage);
+                                    uploadControllers.delete(index);
+                                    showToast(errorMessage, 'error');
+                                    return;
+                                }
+                                
+                                throw new Error(errorData.error || 'Неизвестная ошибка');
+                            }
+
+                            const result = await response.json();
+                            if (!result.success) {
+                                throw new Error(result.error || 'Неизвестная ошибка');
+                            }
+
+                            uploadedSize += chunk.size;
+                            currentUploadedSize += chunk.size;
+                            
+                            // Обновляем общий прогресс загрузки
+                            const totalProgress = (currentUploadedSize / totalUploadSize) * 100;
+                            document.querySelector('.upload-progress .progress-bar').style.width = `${totalProgress}%`;
+                            document.querySelector('.upload-progress .progress-text').textContent = 
+                                `Общий прогресс: ${Math.round(totalProgress)}%`;
+                            
+                            // Обновляем прогресс для текущего файла
+                            const fileProgress = (uploadedSize / totalSize) * 100;
+                            updateFileStatus(
+                                index, 
+                                'uploading', 
+                                `${formatFileSize(uploadedSize)} из ${formatFileSize(totalSize)} (${Math.round(fileProgress)}%)`,
+                                fileProgress
+                            );
+                            
+                            uploaded = true;
+                            chunkNumber++;
+
+                            await new Promise(resolve => setTimeout(resolve, 50));
+
+                        } catch (error) {
+                            if (error.name === 'AbortError') {
+                                updateFileStatus(index, 'cancelled', 'Загрузка отменена');
+                                return;
+                            }
+                            
+                            retries--;
+                            if (retries === 0) {
+                                updateFileStatus(index, 'error', `Ошибка: ${error.message}`);
+                                throw error;
+                            }
+                            
+                            updateFileStatus(index, 'retrying', `Повторная попытка ${3-retries}/3...`);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+
+                    if (!uploaded) {
+                        updateFileStatus(index, 'error', 'Не удалось загрузить часть файла после всех попыток');
+                        throw new Error('Не удалось загрузить часть файла после всех попыток');
+                    }
+                }
+
+                // Файл успешно загружен
+                updateFileStatus(index, 'completed', 'Загрузка завершена');
+                uploadControllers.delete(index);
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('Ошибка:', error);
+                    updateFileStatus(index, 'error', `Ошибка: ${error.message}`);
+                }
+            }
+            
+            // Проверяем, остались ли еще загрузки
+            checkAllUploadsCompleted();
+        }
+        
+        function updateFileStatus(index, status, message, progress = null) {
+            const progressBar = document.getElementById(`progress-${index}`);
+            const progressText = document.getElementById(`progress-text-${index}`);
+            const fileItem = document.getElementById(`file-upload-${index}`);
+            
+            if (!fileItem) return;
+            
+            if (progressBar && progress !== null) {
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            if (progressText) {
+                progressText.textContent = message;
+            }
+            
+            // Обновляем стили в зависимости от статуса
+            if (status === 'uploading') {
+                progressBar.classList.remove('bg-danger', 'bg-success', 'bg-warning');
+                progressBar.classList.add('bg-primary');
+            } else if (status === 'completed') {
+                progressBar.classList.remove('bg-danger', 'bg-primary', 'bg-warning');
+                progressBar.classList.add('bg-success');
+                progressBar.style.width = '100%';
+            } else if (status === 'error') {
+                progressBar.classList.remove('bg-primary', 'bg-success', 'bg-warning');
+                progressBar.classList.add('bg-danger');
+            } else if (status === 'cancelled' || status === 'retrying') {
+                progressBar.classList.remove('bg-primary', 'bg-success', 'bg-danger');
+                progressBar.classList.add('bg-warning');
+            }
+        }
+        
+        function cancelUpload(fileIndex) {
+            const controller = uploadControllers.get(parseInt(fileIndex));
+            if (controller) {
+                controller.abort();
+                uploadControllers.delete(parseInt(fileIndex));
+                updateFileStatus(fileIndex, 'cancelled', 'Загрузка отменена');
+                
+                // Немедленно скрываем элемент интерфейса загрузки этого файла, чтобы предотвратить повторные запросы
+                const fileItem = document.getElementById(`file-upload-${fileIndex}`);
+                if (fileItem && fileItem.parentNode) {
+                    fileItem.style.opacity = '0.5';
+                    const cancelButton = fileItem.querySelector('.cancel-upload');
+                    if (cancelButton) {
+                        cancelButton.disabled = true;
+                        cancelButton.classList.add('disabled');
+                    }
+                }
+                
+                // Отправляем запрос на сервер для удаления частично загруженного файла
+                const filename = document.querySelector(`#file-upload-${fileIndex} .file-name`).textContent;
+                if (filename) {
+                    fetch(`/${linkId}/delete/${filename}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-Token': csrfToken
+                        }
+                    }).catch(err => console.error('Не удалось удалить частично загруженный файл:', err));
+                }
+                
+                // Проверяем если все загрузки завершены или отменены
+                checkAllUploadsCompleted();
+            }
+        }
+        
+        function checkAllUploadsCompleted() {
+            // Проверяем активные загрузки
+            if (uploadControllers.size === 0) {
+                const allFiles = document.querySelectorAll('.file-upload-item');
+                const hasErrors = Array.from(allFiles).some(file => 
+                    file.querySelector('.progress-bar').classList.contains('bg-danger'));
+                const hasCancelled = Array.from(allFiles).some(file => 
+                    file.querySelector('.progress-bar').classList.contains('bg-warning') &&
+                    file.querySelector('.progress-text').textContent.includes('отменена'));
+                
+                if (hasCancelled) {
+                    showToast('Некоторые загрузки были отменены', 'error');
+                    document.querySelector('.upload-progress .progress-text').innerHTML = 
+                        '<span class="text-warning">Некоторые загрузки были отменены</span>';
+                } else if (hasErrors) {
+                    // Соберем все ошибки для показа
+                    const errorMessages = Array.from(allFiles)
+                        .filter(file => file.querySelector('.progress-bar').classList.contains('bg-danger'))
+                        .map(file => file.querySelector('.progress-text').textContent)
+                        .join('; ');
+                    
+                    showToast('При загрузке некоторых файлов произошли ошибки', 'error');
+                    document.querySelector('.upload-progress .progress-text').innerHTML = 
+                        `<span class="text-danger">Ошибки: ${escapeHtml(errorMessages)}</span>`;
+                } else {
+                    showToast('Все файлы успешно загружены', 'success');
+                    document.querySelector('.upload-progress .progress-text').innerHTML = 
+                        '<span class="text-success">Все файлы успешно загружены</span>';
+                }
+                
+                // В любом случае перезагружаем страницу через 2 секунды
+                setTimeout(() => location.reload(), 2000);
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+            else return (bytes / 1073741824).toFixed(1) + ' GB';
+        }
+
+        async function deleteFile(filename) {
+            if (confirm(`Вы уверены, что хотите удалить файл "${escapeHtml(filename)}"?`)) {
+                try {
+                    const response = await fetch(`/${linkId}/delete/${encodeURIComponent(filename)}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-Token': csrfToken
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            showToast('Файл успешно удален', 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else if (result.error) {
+                            showToast(result.error, 'error');
+                        }
+                    } else {
+                        const data = await response.json();
+                        
+                        // Обрабатываем ошибку CSRF токена
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            showToast('Обновление сессии...', 'info');
+                            const tokenRefreshed = await refreshCsrfToken();
+                            
+                            if (tokenRefreshed) {
+                                // Повторяем запрос с новым токеном
+                                const retryResponse = await fetch(`/${linkId}/delete/${encodeURIComponent(filename)}`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-Token': csrfToken
+                                    }
+                                });
+                                
+                                if (retryResponse.ok) {
+                                    const retryResult = await retryResponse.json();
+                                    
+                                    if (retryResult.success) {
+                                        showToast('Файл успешно удален', 'success');
+                                        setTimeout(() => location.reload(), 1000);
+                                    } else if (retryResult.error) {
+                                        showToast(retryResult.error, 'error');
+                                    }
+                                } else {
+                                    showToast('Не удалось удалить файл после обновления сессии', 'error');
+                                }
+                            } else {
+                                showToast('Не удалось обновить сессию. Пожалуйста, обновите страницу', 'error');
+                            }
+                        } else {
+                            showToast(data.error || 'Произошла ошибка при удалении файла', 'error');
+                        }
+                    }
+                } catch (error) {
+                    showToast('Произошла ошибка при удалении файла', 'error');
+                    console.error('Ошибка:', error);
+                }
+            }
+        }
+
+        document.getElementById('select-all').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.file-checkbox:not(#select-all)');
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+            updateButtonsVisibility();
+        });
+
+        document.querySelectorAll('.file-checkbox:not(#select-all)').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateButtonsVisibility();
+                // Обновляем состояние "выбрать все"
+                const allCheckboxes = document.querySelectorAll('.file-checkbox:not(#select-all)');
+                const checkedBoxes = document.querySelectorAll('.file-checkbox:not(#select-all):checked');
+                document.getElementById('select-all').checked = allCheckboxes.length === checkedBoxes.length;
+            });
+        });
+
+        function updateButtonsVisibility() {
+            const checkedBoxes = document.querySelectorAll('.file-checkbox:not(#select-all):checked');
+            const deleteButton = document.getElementById('delete-selected');
+            const downloadButton = document.getElementById('download-selected');
+            const hasChecked = checkedBoxes.length > 0;
+            
+            deleteButton.style.display = hasChecked ? 'inline-block' : 'none';
+            downloadButton.style.display = hasChecked ? 'inline-block' : 'none';
+        }
+
+        document.getElementById('download-selected').addEventListener('click', async function() {
+            const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked:not(#select-all)'))
+                                     .map(cb => cb.getAttribute('data-filename'));
+            
+            if (selectedFiles.length === 0) {
+                showToast('Выберите файлы для скачивания', 'error');
+                return;
+            }
+            
+            try {
+                // Убедимся, что linkId используется в URL
+                const response = await fetch(`/${linkId}/download-multiple`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken // Убедимся, что csrfToken определен и передается
+                    },
+                    body: JSON.stringify({ filenames: selectedFiles })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // Получаем имя файла из заголовка Content-Disposition, если оно есть
+                    const disposition = response.headers.get('content-disposition');
+                    let filename = `storage_${linkId}_files.zip`; // Имя по умолчанию
+                    if (disposition && disposition.indexOf('attachment') !== -1) {
+                        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                        const matches = filenameRegex.exec(disposition);
+                        if (matches != null && matches[1]) { 
+                            filename = matches[1].replace(/['"]/g, '');
+                        }
+                    }
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    showToast('Скачивание архива началось', 'success');
+                } else {
+                    const errorData = await response.json().catch(() => ({ error: 'Не удалось получить детали ошибки' }));
+                    console.error('Ошибка при скачивании архива:', response.status, errorData.error);
+                    showToast(`Ошибка скачивания архива: ${errorData.error || response.statusText}`, 'error');
+                    // Попытка обновить CSRF токен при ошибке 403
+                    if (response.status === 403 && (errorData.error || '').toLowerCase().includes('csrf')) {
+                        await refreshCsrfToken();
+                        showToast('Сессия обновлена. Попробуйте еще раз.', 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка при скачивании архива:', error);
+                showToast(`Ошибка сети при скачивании архива: ${error.message}`, 'error');
+            }
+        });
+
+        document.getElementById('delete-selected').addEventListener('click', async function() {
+            const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:not(#select-all):checked'))
+                .map(checkbox => checkbox.getAttribute('data-filename'));
+            
+            if (selectedFiles.length === 0) {
+                showToast('Выберите файлы для удаления', 'error');
+                return;
+            }
+
+            if (!confirm('Вы уверены, что хотите удалить выбранные файлы?')) {
+                return;
+            }
+
+            let csrfError = false;
+
+            for (const filename of selectedFiles) {
+                try {
+                    const response = await fetch(`/${linkId}/delete/${filename}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-Token': csrfToken
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        
+                        // Если получили ошибку CSRF, пытаемся обновить токен
+                        if (response.status === 403 && error.error && error.error.includes('CSRF') && !csrfError) {
+                            csrfError = true; // Устанавливаем флаг, чтобы не повторять обновление для каждого файла
+                            showToast('Обновление сессии...', 'info');
+                            await refreshCsrfToken();
+                            // Продолжим обработку файлов с новым токеном
+                            continue;
+                        }
+                        
+                        console.error(`Ошибка при удалении файла ${filename}:`, error);
+                        showToast(`Ошибка при удалении файла ${filename}: ${error.error || 'неизвестная ошибка'}`, 'error');
+                    }
+                } catch (error) {
+                    console.error(`Ошибка при удалении файла ${filename}:`, error);
+                    showToast(`Ошибка при удалении файла ${filename}`, 'error');
+                }
+            }
+
+            // Перезагружаем страницу после удаления
+            location.reload();
+        });
+
+        document.getElementById('delete-storage').addEventListener('click', async function() {
+            if (!confirm('Вы уверены, что хотите удалить все файлы и освободить пространство хранилища?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/${linkId}/delete-all`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': csrfToken
+                    }
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    
+                    // Обрабатываем ошибку CSRF токена
+                    if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                        showToast('Обновление сессии...', 'info');
+                        const tokenRefreshed = await refreshCsrfToken();
+                        
+                        if (tokenRefreshed) {
+                            // Повторяем запрос с новым токеном
+                            const retryResponse = await fetch(`/${linkId}/delete-all`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-Token': csrfToken
+                                }
+                            });
+                            
+                            if (retryResponse.ok) {
+                                location.reload();
+                                return;
+                            } else {
+                                const retryData = await retryResponse.json();
+                                throw new Error(retryData.error || 'Ошибка при удалении всех файлов');
+                            }
+                        } else {
+                            throw new Error('Не удалось обновить сессию. Пожалуйста, обновите страницу.');
+                        }
+                    } else {
+                        throw new Error(data.error || 'Ошибка при удалении всех файлов');
+                    }
+                }
+                
+                location.reload();
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showToast(`Ошибка при удалении всех файлов: ${error.message}`, 'error');
+            }
+        });
+
+        // Функция для переключения темы
+        async function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            const themeIcon = document.querySelector('.theme-switch i');
+            
+            html.setAttribute('data-theme', newTheme);
+            themeIcon.className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+            
+            try {
+                // Убедимся, что linkId используется в URL
+                const response = await fetch(`/${linkId}/set-theme`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken // Убедимся, что csrfToken определен и передается
+                    },
+                    body: JSON.stringify({ theme: newTheme })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({})); // Попытка получить JSON ошибки
+                    console.error('Ошибка при сохранении темы:', response.status, errorData.error || 'Неизвестная ошибка');
+                    // Можно показать уведомление пользователю
+                    showToast(`Ошибка сохранения темы: ${errorData.error || response.statusText}`, 'error');
+                } else {
+                    console.log('Тема успешно обновлена');
+                }
+            } catch (error) {
+                console.error('Ошибка при отправке запроса на сохранение темы:', error);
+                showToast(`Ошибка сети при сохранении темы: ${error.message}`, 'error');
+            }
+        }
+        
+        // Добавляем обработчик для кнопки переключения темы
+        document.querySelector('.theme-switch').addEventListener('click', toggleTheme);
+        
+        // Устанавливаем правильную иконку при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const themeIcon = document.querySelector('.theme-switch i');
+            themeIcon.className = currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+            
+            // Существующий код инициализации
+            const progressBar = document.querySelector('.storage-progress .progress-bar');
+            const value = parseFloat(progressBar.getAttribute('aria-valuenow'));
+            progressBar.style.setProperty('--value', '100%');
+            progressBar.style.setProperty('--bg-size', (100 * 100 / value) + '%');
+            
+            updateButtonsVisibility();
+            initCountdown(); // Добавляем вызов initCountdown здесь, если его нет
+        });
+
+        // Функция для показа уведомлений
+        function showToast(message, type = 'error') {
+            const toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                console.error('Контейнер для уведомлений не найден');
+                return;
+            }
+            
+            const toast = document.createElement('div');
+            let toastClass = 'toast';
+            if (type === 'error') {
+                toastClass += ' toast-error';
+            } else if (type === 'success') {
+                toastClass += ' toast-success';
+            } else {
+                toastClass += ' toast-info'; // Default or other types
+            }
+            toast.className = toastClass;
+            
+            // Добавляем иконку в зависимости от типа
+            let iconClass = '';
+            if (type === 'error') {
+                iconClass = 'fas fa-exclamation-circle';
+            } else if (type === 'success') {
+                iconClass = 'fas fa-check-circle';
+            } else {
+                iconClass = 'fas fa-info-circle';
+            }
+            toast.innerHTML = `<div class="toast-icon"><i class="${iconClass}"></i></div><div class="toast-message">${escapeHtml(message)}</div>`;
+            toastContainer.appendChild(toast);
+            
+            // Показываем тост и скрываем через некоторое время
+            setTimeout(function() {
+                toast.style.opacity = '1';
+            }, 10);
+            
+            setTimeout(function() {
+                toast.style.opacity = '0';
+                setTimeout(function() {
+                    if (toast.parentElement) {
+                        toast.parentElement.removeChild(toast);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Обновляем обработку ошибок в существующем коде
+        function handleError(error) {
+            console.error('Ошибка:', error);
+            showToast(error.message || 'Произошла ошибка при выполнении операции');
+        }
+
+        // Функция для безопасного эскейпа HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Устанавливаем CSRF-токен для всех AJAX запросов
+        let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Функция для обновления CSRF токена после ошибки
+        async function refreshCsrfToken() {
+            try {
+                // Просто делаем безопасный запрос, чтобы обновить сессию и получить новый токен
+                const response = await fetch(window.location.href);
+                if (response.ok) {
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newToken = doc.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    
+                    if (newToken) {
+                        csrfToken = newToken;
+                        document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+                        console.log('CSRF токен обновлен');
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error('Ошибка при обновлении CSRF токена:', error);
+                return false;
+            }
+        }
+        
+        // Добавляем CSRF-токен к каждому AJAX запросу
+        function setupAjaxCSRF() {
+            const oldXHROpen = window.XMLHttpRequest.prototype.open;
+            window.XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+                const xhr = this;
+                oldXHROpen.apply(xhr, arguments);
+                
+                if (method.toLowerCase() === 'post') {
+                    xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+                }
+            };
+        }
+        setupAjaxCSRF();
+        
+        // Добавляем CSRF токен к Dropzone запросам
+        if (typeof Dropzone !== 'undefined') {
+            Dropzone.prototype.defaultOptions.headers = {
+                'X-CSRF-Token': csrfToken
+            };
+        }
+        
+        // Скачивание нескольких файлов
+        async function downloadSelected() {
+            const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+            const files = [];
+            
+            if (checkboxes.length === 0) {
+                showToast('Выберите файлы для скачивания', 'error');
+                return;
+            }
+            
+            checkboxes.forEach(checkbox => {
+                files.push(checkbox.value);
+            });
+            
+            try {
+                // Убедимся, что linkId используется в URL
+                const response = await fetch(`/${linkId}/download-multiple`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken // Убедимся, что csrfToken определен и передается
+                    },
+                    body: JSON.stringify({
+                        files: files
+                    })
+                });
+                
+                if (response.ok) {
+                    // Создаем элемент для принудительной загрузки файла
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // Получаем имя файла из заголовка Content-Disposition, если оно есть
+                    const disposition = response.headers.get('content-disposition');
+                    let filename = `storage_${linkId}_files.zip`; // Имя по умолчанию
+                    if (disposition && disposition.indexOf('attachment') !== -1) {
+                        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                        const matches = filenameRegex.exec(disposition);
+                        if (matches != null && matches[1]) { 
+                            filename = matches[1].replace(/['"]/g, '');
+                        }
+                    }
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    showToast('Скачивание архива началось', 'success');
+                } else {
+                    const errorData = await response.json().catch(() => ({ error: 'Не удалось получить детали ошибки' }));
+                    console.error('Ошибка при скачивании архива:', response.status, errorData.error);
+                    showToast(`Ошибка скачивания архива: ${errorData.error || response.statusText}`, 'error');
+                    // Попытка обновить CSRF токен при ошибке 403
+                    if (response.status === 403 && (errorData.error || '').toLowerCase().includes('csrf')) {
+                        await refreshCsrfToken();
+                        showToast('Сессия обновлена. Попробуйте еще раз.', 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка при скачивании архива:', error);
+                showToast(`Ошибка сети при скачивании архива: ${error.message}`, 'error');
+            }
+        }
+
+        // Функция для инициализации обратного отсчета
+        function initCountdown() {
+            const countdownTimer = document.getElementById('countdownTimer');
+            const countDays = document.getElementById('countDays');
+            const countHours = document.getElementById('countHours');
+            const countMinutes = document.getElementById('countMinutes');
+            const countSeconds = document.getElementById('countSeconds');
+            
+            // Получаем дату истечения срока из переменной expires_at
+            const expiresAt = new Date("{{ expires_at }}");
+            
+            if (isNaN(expiresAt.getTime())) {
+                countdownTimer.style.display = 'none';
+                return;
+            }
+            
+            // Функция обновления таймера
+            function updateCountdown() {
+                const now = new Date();
+                const diff = expiresAt - now;
+                
+                if (diff <= 0) {
+                    // Срок истек
+                    countDays.textContent = '00';
+                    countHours.textContent = '00';
+                    countMinutes.textContent = '00';
+                    countSeconds.textContent = '00';
+                    countdownTimer.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Срок хранения истек';
+                    return;
+                }
+                
+                // Вычисляем оставшееся время
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                // Обновляем элементы
+                countDays.textContent = days.toString().padStart(2, '0');
+                countHours.textContent = hours.toString().padStart(2, '0');
+                countMinutes.textContent = minutes.toString().padStart(2, '0');
+                countSeconds.textContent = seconds.toString().padStart(2, '0');
+                
+                // Добавляем класс для анимации, если осталось меньше 24 часов
+                if (diff < 24 * 60 * 60 * 1000) {
+                    countdownTimer.classList.add('expiring');
+                } else {
+                    countdownTimer.classList.remove('expiring');
+                }
+            }
+            
+            // Обновляем сразу и настраиваем интервал
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+
+        // Обработчики для функции "Поделиться"
+        document.getElementById('pageShareTrigger').addEventListener('click', function() {
+            const shareModal = document.getElementById('shareModal');
+            const shareLinkInput = document.getElementById('shareLinkInput');
+            
+            // Установить текущий URL в поле ввода
+            shareLinkInput.value = window.location.href;
+            
+            // Показать модальное окно
+            shareModal.classList.add('active');
+        });
+        
+        document.getElementById('shareModalClose').addEventListener('click', function() {
+            document.getElementById('shareModal').classList.remove('active');
+        });
+        
+        document.getElementById('copyButton').addEventListener('click', function() {
+            const shareLinkInput = document.getElementById('shareLinkInput');
+            
+            // Выбрать текст
+            shareLinkInput.select();
+            shareLinkInput.setSelectionRange(0, 99999);
+            
+            // Скопировать текст
+            navigator.clipboard.writeText(shareLinkInput.value).then(function() {
+                showToast('Ссылка скопирована в буфер обмена', 'success');
+            }).catch(function() {
+                // Fallback для старых браузеров
+                document.execCommand('copy');
+                showToast('Ссылка скопирована в буфер обмена', 'success');
+            });
+        });
+        
+        // Обработчики для вариантов шеринга
+        document.getElementById('shareWhatsApp').addEventListener('click', function() {
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://wa.me/?text=${url}`, '_blank');
+        });
+        
+        document.getElementById('shareTelegram').addEventListener('click', function() {
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://t.me/share/url?url=${url}`, '_blank');
+        });
+        
+        document.getElementById('shareEmail').addEventListener('click', function() {
+            const url = encodeURIComponent(window.location.href);
+            const subject = encodeURIComponent('Ссылка на временное хранилище');
+            const body = encodeURIComponent(`Вот ссылка на временное хранилище: ${window.location.href}`);
+            window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+        });
+        
+        document.getElementById('shareQR').addEventListener('click', function() {
+            const url = encodeURIComponent(window.location.href);
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
+            
+            // Открываем QR-код в новом окне
+            window.open(qrCodeUrl, '_blank');
+        });
+        
+        // Закрытие модальных окон при нажатии клавиши Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('shareModal').classList.remove('active');
+            }
+        });
+        
+        // Закрытие модальных окон при клике вне их содержимого
+        window.addEventListener('click', function(e) {
+            const shareModal = document.getElementById('shareModal');
+            
+            if (e.target === shareModal) {
+                shareModal.classList.remove('active');
+            }
+        });
+
+        // --- Логика фильтрации таблицы ---
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация фильтрации
+            const filterFileNameInput = document.getElementById('filterFileName');
+            const filterFileExtInput = document.getElementById('filterFileExt');
+            const tableBody = document.getElementById('fileTableBody');
+            const tableRows = tableBody.getElementsByTagName('tr');
+            const fileNameList = document.getElementById('fileNameList');
+            const fileExtList = document.getElementById('fileExtList');
+
+            // Сбор уникальных значений для автодополнения
+            const uniqueFileNames = new Set();
+            const uniqueFileExts = new Set();
+
+            for (let i = 0; i < tableRows.length; i++) {
+                const row = tableRows[i];
+                const fileNameCell = row.cells[1]; // Ячейка с именем файла
+                const fileExtCell = row.cells[2];  // Ячейка с расширением
+
+                if (fileNameCell && fileNameCell.textContent) {
+                    const fullName = fileNameCell.closest('td').getAttribute('title'); // Получаем полное имя из title
+                    if (fullName) {
+                         const namePart = fullName.substring(0, fullName.lastIndexOf('.')) || fullName;
+                         uniqueFileNames.add(namePart.trim());
+                    }
+                }
+                if (fileExtCell && fileExtCell.textContent) {
+                    uniqueFileExts.add(fileExtCell.textContent.trim());
+                }
+            }
+
+            // Заполнение datalist для имени файла
+            uniqueFileNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                fileNameList.appendChild(option);
+            });
+
+            // Заполнение datalist для расширения файла
+            uniqueFileExts.forEach(ext => {
+                if (ext) { // Не добавляем пустые расширения
+                    const option = document.createElement('option');
+                    option.value = ext;
+                    fileExtList.appendChild(option);
+                }
+            });
+
+
+            function applyFilters() {
+                const filterFileName = filterFileNameInput.value.toLowerCase();
+                const filterFileExt = filterFileExtInput.value.toLowerCase();
+
+                for (let i = 0; i < tableRows.length; i++) {
+                    const row = tableRows[i];
+                    const fileNameCell = row.cells[1]; // Ячейка с именем файла (часть до расширения)
+                    const fileExtCell = row.cells[2];  // Ячейка с расширением
+                    const fullFileNameFromTitle = fileNameCell.closest('td').getAttribute('title').toLowerCase(); // Получаем полное имя из title
+
+                    if (fileNameCell && fileExtCell && fullFileNameFromTitle) {
+                        const fileNameMatch = fullFileNameFromTitle.includes(filterFileName); 
+                        
+                        const fileExt = fileExtCell.textContent.toLowerCase();
+                        const fileExtMatch = fileExt.includes(filterFileExt);
+
+                        if (fileNameMatch && fileExtMatch) {
+                            row.style.display = ''; // Показать строку
+                        } else {
+                            row.style.display = 'none'; // Скрыть строку
+                        }
+                    }
+                }
+                updateSelectAllCheckboxState();
+                updateButtonsVisibility(); 
+            }
+
+            filterFileNameInput.addEventListener('input', applyFilters);
+            filterFileExtInput.addEventListener('input', applyFilters);
+
+            function updateSelectAllCheckboxState() {
+                const allVisibleCheckboxes = document.querySelectorAll('.file-checkbox:not(#select-all):not([style*="display: none"])');
+                const checkedVisibleCheckboxes = document.querySelectorAll('.file-checkbox:not(#select-all):checked:not([style*="display: none"])');
+                const selectAllCheckbox = document.getElementById('select-all');
+                
+                if (allVisibleCheckboxes.length > 0) {
+                    selectAllCheckbox.checked = allVisibleCheckboxes.length === checkedVisibleCheckboxes.length;
+                } else {
+                    selectAllCheckbox.checked = false; 
+                }
+            }
+            
+            document.getElementById('select-all').addEventListener('change', function() {
+                const isChecked = this.checked;
+                const visibleCheckboxes = document.querySelectorAll('#fileTableBody tr:not([style*="display: none"]) .file-checkbox:not(#select-all)');
+                visibleCheckboxes.forEach(checkbox => checkbox.checked = isChecked);
+                updateButtonsVisibility();
+            });
+
+            document.querySelectorAll('.file-checkbox:not(#select-all)').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateButtonsVisibility();
+                    updateSelectAllCheckboxState(); 
+                });
+            });
+
+        });
+        // --- Конец логики фильтрации ---
+
+        // Подключаем PDF.js (лучше использовать конкретную версию)
+    </script>
+    <script src="{{ url_for('static', filename='js/preview.js') }}" defer></script>
+        <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024-2025 ВРЕМЕННОЕ ХРАНИЛИЩЕ. Почти все права защищены.</p>
+            <p> Created by <a href="https://t.me/qwertyO5" target="_blank">SL1ZN1T3L</a> and <a href="https://t.me/Dovi_t" target="_blank">Dovi</a> </p>
+        </div>
+    </footer>
+</body>
+</html>

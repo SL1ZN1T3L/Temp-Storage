@@ -1,0 +1,450 @@
+:root {
+    --primary-color: #4a90e2;
+    --secondary-color: #f5f5f5;
+    --text-color: #333;
+    --border-color: #ddd;
+    --success-color: #4caf50;
+    --danger-color: #f44336;
+    --info-color: #17a2b8;
+    --info-hover-color: #138496;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: #f9f9f9;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 20px 0;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.storage-info {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.storage-progress {
+    height: 20px;
+    background-color: var(--secondary-color);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.file-upload {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+#upload-form {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+#file-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #357abd;
+}
+
+.btn-download {
+    background-color: var(--success-color);
+    color: white;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+}
+
+.btn-delete {
+    background-color: var(--danger-color);
+    color: white;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+}
+
+.btn-preview {
+    background-color: var(--info-color);
+    color: white;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+}
+
+.btn-preview:hover {
+    background-color: var(--info-hover-color);
+}
+
+.files-list {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: var(--secondary-color);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px 0;
+    color: #777;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Стили для выравнивания кнопок в таблице файлов */
+.file-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-preview, .btn-download, .btn-delete {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Стили для отображения имен файлов */
+.file-name-container {
+    max-width: 250px;
+}
+
+.file-name-wrapper {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-type-icon {
+    font-size: 16px;
+    margin-right: 8px;
+    min-width: 18px;
+    text-align: center;
+    color: var(--primary-color);
+    flex-shrink: 0;
+}
+
+.file-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 10px;
+    }
+    header h1 {
+        font-size: 20px;
+    }
+    #upload-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    th, td {
+        padding: 8px 5px;
+        font-size: 14px;
+    }
+    .file-actions {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    .btn-download, .btn-delete, .btn-preview {
+        width: 32px;
+        height: 32px;
+        padding: 6px;
+    }
+    .file-name-container {
+        max-width: 150px;
+    }
+    /* Исправление для таблицы файлов на мобильных */
+    .files-list {
+        overflow-x: auto;
+    }
+    .file-table,
+    .file-table thead,
+    .file-table tbody,
+    .file-table tr,
+    .file-table th,
+    .file-table td {
+        display: revert !important;
+        width: revert !important;
+        max-width: revert !important;
+        table-layout: auto !important;
+    }
+    .file-table tbody {
+        display: revert !important;
+        max-height: revert !important;
+        overflow-y: revert !important;
+        width: revert !important;
+    }
+}
+
+/* Темная тема */
+[data-theme="dark"] {
+    --primary-color: #58a6ff;
+    --secondary-color: #22272e;
+    --text-color: #c9d1d9;
+    --border-color: #444c56;
+    --bg-color: #0d1117;
+    --card-bg: #161b22;
+    --hover-bg: #22272e;
+    --success-color: #3fb950;
+    --danger-color: #f85149;
+    --info-color: #388bfd;
+    --info-hover-color: #58a6ff;
+}
+
+[data-theme="dark"] body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .storage-info,
+[data-theme="dark"] .file-upload,
+[data-theme="dark"] .files-list {
+    background-color: var(--card-bg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .storage-progress {
+    background-color: #22272e;
+}
+
+[data-theme="dark"] #file-input {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] table {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] th, [data-theme="dark"] td {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] th {
+    background-color: var(--secondary-color);
+}
+
+[data-theme="dark"] tr:hover {
+    background-color: var(--hover-bg);
+}
+
+[data-theme="dark"] footer {
+    color: #8b949e;
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-primary {
+    background-color: var(--primary-color);
+    color: #0d1117;
+}
+[data-theme="dark"] .btn-primary:hover {
+    background-color: #79c0ff;
+}
+
+[data-theme="dark"] .btn-download {
+    background-color: var(--success-color);
+    color: #0d1117;
+}
+[data-theme="dark"] .btn-download:hover {
+    background-color: #56d364;
+}
+
+[data-theme="dark"] .btn-delete {
+    background-color: var(--danger-color);
+    color: #0d1117;
+}
+[data-theme="dark"] .btn-delete:hover {
+    background-color: #ff7b72;
+}
+
+[data-theme="dark"] .btn-preview {
+    background-color: var(--info-color);
+    color: #0d1117;
+}
+[data-theme="dark"] .btn-preview:hover {
+    background-color: var(--info-hover-color);
+}
+
+[data-theme="dark"] .file-type-icon {
+    color: var(--primary-color);
+}
+
+/* New styles for file list and table */
+.file-list {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-top: 15px;
+}
+
+.file-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+
+.file-table tbody {
+    display: block;
+    max-height: 70vh;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.file-table thead,
+.file-table tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.file-table th,
+.file-table td {
+    border-color: var(--border-color);
+    vertical-align: top;
+    padding: 12px 8px;
+}
+
+.file-table th:nth-child(1),
+.file-table td:nth-child(1) {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    padding-left: 0;
+    padding-right: 0;
+    text-align: center;
+}
+
+.file-table th:nth-child(3),
+.file-table td:nth-child(3) {
+    width: 150px;
+    max-width: 150px;
+    padding-left: 10px;
+    padding-right: 10px;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-table th:nth-child(4),
+.file-table td:nth-child(4) {
+    width: 100px;
+    max-width: 100px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.file-table th:nth-child(5),
+.file-table td:nth-child(5) {
+    width: 160px;
+    max-width: 160px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.file-table th:nth-child(6),
+.file-table td:nth-child(6) {
+    width: 120px;
+    max-width: 120px;
+    padding-left: 10px;
+    padding-right: 10px;
+}

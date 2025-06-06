@@ -1,0 +1,281 @@
+/* General styles for the preview modal */
+.preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Darker background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050; /* Ensure it's above other elements */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.preview-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.preview-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    align-items: center;
+    justify-content: center;
+    background-color: #333; /* Dark background for content area */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    padding: 10px; /* Add some padding */
+}
+
+#previewContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Hide overflow */
+    min-height: 300px; /* Minimum height */
+}
+
+.preview-close {
+    position: absolute;
+    top: -35px; /* Position above the content box */
+    right: -10px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    z-index: 10; /* Ensure it's above content */
+}
+
+.preview-close:hover {
+    background-color: rgba(255, 0, 0, 0.7); /* Red background on hover */
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 100%; /* Allow image to fill height */
+    object-fit: contain;
+    display: block; /* Remove extra space below image */
+    margin: auto; /* Center image */
+}
+
+.preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block; /* Ensure iframe takes full space */
+}
+
+/* Стили для iframe ViewerJS */
+.preview-viewerjs-iframe {
+    width: 85vw; /* Ширина iframe */
+    height: 85vh; /* Высота iframe */
+    background-color: #fff; /* Белый фон на случай долгой загрузки */
+    border-radius: 5px; /* Небольшое скругление углов */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Тень для выделения */
+}
+
+.preview-filename {
+    position: absolute;
+    bottom: 10px; /* Closer to the bottom */
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7); /* Background for readability */
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-size: 14px;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%; /* Limit width */
+    z-index: 5; /* Below controls */
+}
+
+.preview-controls {
+    position: absolute;
+    top: 50%;
+    left: 10px; /* Position inside the modal */
+    right: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    z-index: 10; /* Above filename */
+    pointer-events: none; /* Allow clicks to pass through */
+}
+
+.preview-control {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    pointer-events: all; /* Make buttons clickable */
+}
+
+.preview-control:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.preview-control#previewPrev {
+    margin-left: -50px; /* Adjust position */
+}
+
+.preview-control#previewNext {
+    margin-right: -50px; /* Adjust position */
+}
+
+/* Loading and Error states */
+.preview-loading,
+.preview-error {
+    color: white;
+    text-align: center;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 200px; /* Минимальная высота для видимости */
+    background-color: rgba(51, 51, 51, 0.8); /* Полупрозрачный фон */
+    border-radius: 5px;
+}
+
+.preview-loading i,
+.preview-error i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.preview-error .btn {
+    margin-top: 20px;
+}
+
+/* Text preview styles */
+.preview-text {
+    background-color: #f8f9fa; /* Light background for text */
+    color: #212529; /* Dark text */
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: auto;
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap; /* Wrap long lines */
+    word-wrap: break-word; /* Break long words */
+    font-size: 14px;
+    text-align: left;
+    box-sizing: border-box; /* Include padding in width/height */
+}
+
+/* Стили для предпросмотра документов (общие для PDF и iframe) */
+.preview-document {
+    background-color: #555; /* Darker background for document container */
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Allow scrolling within the document container if needed */
+    display: flex; /* Use flex for centering content like loading/error */
+    flex-direction: column;
+    align-items: center;
+}
+
+/* --- Стили для PDF Embed --- */
+.preview-pdf-embed {
+    width: 80vw;  /* Ширина как у iframe по умолчанию */
+    height: 80vh; /* Высота как у iframe по умолчанию */
+    overflow: auto; /* Включаем прокрутку, если контент больше */
+    background-color: white; /* Белый фон по умолчанию */
+    padding: 0; /* Убираем padding для embed */
+    box-sizing: border-box;
+    border-radius: 5px;
+    border: none; /* Убираем рамку для embed */
+    display: block; /* Убедимся, что embed ведет себя как блок */
+}
+
+/* Специфичный фон для PDF */
+.preview-pdf-embed {
+    background-color: #525659; /* Темный фон для области PDF */
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .preview-content {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+
+    .preview-close {
+        top: 5px;
+        right: 5px;
+        width: 30px;
+        height: 30px;
+        font-size: 18px;
+    }
+
+    .preview-filename {
+        bottom: 5px;
+        font-size: 12px;
+        padding: 3px 10px;
+        max-width: 90%;
+    }
+
+    .preview-controls {
+        padding: 0 5px;
+    }
+
+    .preview-control {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .preview-control#previewPrev {
+        margin-left: -40px; 
+    }
+
+    .preview-control#previewNext {
+        margin-right: -40px;
+    }
+
+    .preview-text {
+        font-size: 12px;
+        padding: 10px;
+    }
+
+    /* Адаптация новых контейнеров и PDF embed */
+    .preview-pdf-embed {
+        width: 95vw;  /* Увеличиваем ширину на мобильных */
+        height: 85vh; /* Увеличиваем высоту на мобильных */
+        font-size: 12px;
+    }
+    .preview-pdf-embed {
+        padding: 0; /* Убираем padding для embed */
+    }
+}

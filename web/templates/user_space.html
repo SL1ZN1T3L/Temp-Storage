@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Моё хранилище{% endblock %}
+
+{% block content %}
+<div class="storage-info">
+    <div class="storage-progress">
+        <div class="progress-bar" style="width: {{ used_percent }}%"></div>
+    </div>
+    <p>Использовано: {{ "%.2f"|format(total_size / (1024 * 1024)) }} MB из 500 MB</p>
+</div>
+
+<div class="file-upload">
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="file-input" multiple>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-upload"></i> Загрузить файлы
+        </button>
+    </form>
+</div>
+
+<div class="files-list">
+    <h2>Мои файлы</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Имя файла</th>
+                <th>Расширение файла</th>
+                <th style="padding-left: 15px;">Размер</th>
+                <th style="padding-left: 15px;">Дата изменения</th>
+                <th style="padding-left: 15px;">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for file in files %}
+            <tr>
+                <td>{{ file.name.rsplit('.', 1)[0] }}</td>
+                <td style="padding-left: 15px;">
+                    {% set ext = file.name.split('.')[-1]|lower if '.' in file.name else '' %}
+                    {{ ext }}
+                </td>
+                <td style="padding-left: 15px;">{{ "%.2f"|format(file.size / (1024 * 1024)) }} MB</td>
+                <td style="padding-left: 15px;">{{ file.modified.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td class="file-actions" style="padding-left: 15px;">
+                    <a href="{{ url_for('download_file', user_id=user_id, filename=file.name) }}" 
+                       class="btn btn-download" title="Скачать">
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <button class="btn btn-delete" 
+                            onclick="deleteFile('{{ file.name }}')" 
+                            title="Удалить">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
