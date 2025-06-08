@@ -20,6 +20,7 @@ TEMP_DIR = os.path.join(BOT_DIR, 'temp')
 LOG_DIR = os.path.join(BOT_DIR, 'logs')
 TEMP_LINKS_DIR = os.path.join(BOT_DIR, 'temp_links')
 
+
 # Создаем директории логов, если они не существуют
 try:
     shutil.rmtree('logs')
@@ -43,6 +44,10 @@ load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
     raise ValueError("Не указан токен бота в файле .env (BOT_TOKEN)")
+
+COUNT_ID = os.getenv('COUNT_ID') # Колличество символов link_id
+if not COUNT_ID:
+    raise ValueError('Не указано количество символов-ID хранилища в файле .env(COUNT_ID).', 10)
 
 ADMIN_CODE = os.getenv('ADMIN_CODE')
 if not ADMIN_CODE:
@@ -315,6 +320,10 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_user_access(update, context):
         return MENU
+    
+    if not is_bot_enabled() and not is_admin(update.effective_user.id):
+        await update.message.reply_text("Бот находится на техническом обслуживании. Пожалуйста, подождите.")
+        return MENU
         
     text = update.message.text
     
@@ -385,6 +394,10 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return MENU
 
 async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_bot_enabled() and not is_admin(update.effective_user.id):
+        await update.message.reply_text("Бот находится на техническом обслуживании. Пожалуйста, подождите.")
+        return MENU
+    
     keyboard = []
     if is_admin(update.effective_user.id):
         keyboard.extend([
@@ -397,6 +410,9 @@ async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return SETTINGS
 
 async def process_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_bot_enabled() and not is_admin(update.effective_user.id):
+        await update.message.reply_text("Бот находится на техническом обслуживании. Пожалуйста, подождите.")
+        return MENU
     text = update.message.text
     
     if text == "Назад":
@@ -435,6 +451,9 @@ async def process_tech_commands(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("У вас нет прав для выполнения этой команды.")
         await show_menu(update, context)
         return MENU
+    if not is_bot_enabled() and not is_admin(update.effective_user.id):
+        await update.message.reply_text("Бот находится на техническом обслуживании. Пожалуйста, подождите.")
+        return MENU
     
     text = update.message.text
     
@@ -469,6 +488,9 @@ async def process_other_commands(update: Update, context: ContextTypes.DEFAULT_T
     if not await check_admin_rights(update.effective_user.id):
         await update.message.reply_text("У вас нет прав для выполнения этой команды.")
         await show_menu(update, context)
+        return MENU
+    if not is_bot_enabled() and not is_admin(update.effective_user.id):
+        await update.message.reply_text("Бот находится на техническом обслуживании. Пожалуйста, подождите.")
         return MENU
     
     text = update.message.text
@@ -562,35 +584,48 @@ async def process_user_management(update: Update, context: ContextTypes.DEFAULT_
             if user_id == update.effective_user.id:
                 await update.message.reply_text("Вы не можете удалить себя.")
             else:
-                await remove_user(user_id)
-                await update.message.reply_text("Пользователь удален.")
-                return await show_users_list(update, context)
+                try:
+                    await remove_user(user_id)
+                    await update.message.reply_text("Пользователь удален.")
+                    return await show_users_list(update, context)
+                except Exception as e:
+                    await update.message.reply_text(f"Ошибка при удалении пользователя: {str(e)}")
         elif text == "Заблокировать":
             if user_id == update.effective_user.id:
                 await update.message.reply_text("Вы не можете заблокировать себя.")
             else:
-                if await ban_user(context.bot, user_id, True):
-                    await update.message.reply_text("Пользователь заблокирован.")
-                else:
-                    await update.message.reply_text("Ошибка при блокировке пользователя.")
-                return await show_users_list(update, context)
+                try:
+                    if await ban_user(context.bot, user_id, True):
+                        await update.message.reply_text("Пользователь заблокирован.")
+                    else:
+                        await update.message.reply_text("Ошибка при блокировке пользователя.")
+                    return await show_users_list(update, context)
+                except Exception as e:
+                    await update.message.reply_text(f"Ошибка при блокировке пользователя: {str(e)}")
         elif text == "Разблокировать":
-            if await ban_user(context.bot, user_id, False):
-                await update.message.reply_text("Пользователь разблокирован.")
-            else:
-                await update.message.reply_text("Ошибка при разблокировке пользователя.")
-            return await show_users_list(update, context)
+            try:
+                if await ban_user(context.bot, user_id, False):
+                    await update.message.reply_text("Пользователь разблокирован.")
+                else:
+                    await update.message.reply_text("Ошибка при разблокировке пользователя.")
+                return await show_users_list(update, context)
+            except Exception as e:
+                await update.message.reply_text(f"Ошибка при разблокировке пользователя: {str(e)}")
         else:
             role = {
                 "Выдать пользователя": UserRole.USER,
                 "Выдать пользователя+": UserRole.USER_PLUS,
                 "Выдать админа": UserRole.ADMIN
             }[text]
-            async with aiosqlite.connect(DB_PATH) as conn:
-                await conn.execute('UPDATE users SET role = ? WHERE user_id = ?', (role, user_id))
-                await conn.commit()
-            await update.message.reply_text("Роль пользователя обновлена.")
-            return await show_users_list(update, context)
+            
+            try:
+                async with aiosqlite.connect(DB_PATH) as conn:
+                    await conn.execute('UPDATE users SET role = ? WHERE user_id = ?', (role, user_id))
+                    await conn.commit()
+                await update.message.reply_text("Роль пользователя обновлена.")
+                return await show_users_list(update, context)
+            except Exception as e:
+                await update.message.reply_text(f"Ошибка при обновлении роли: {str(e)}")
     
     elif text in context.user_data.get('users_info', {}):
         user_id = context.user_data['users_info'][text]
@@ -640,7 +675,7 @@ async def generate_temp_link_id():
     """Генерация уникального ID для временной ссылки"""
     chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     while True:
-        link_id = ''.join(random.choice(chars) for _ in range(3))
+        link_id = ''.join(random.choice(chars) for _ in range(COUNT_ID))
         async with aiosqlite.connect(DB_PATH) as conn:
             cursor = await conn.execute('SELECT COUNT(*) FROM temp_links WHERE link_id = ?', (link_id,))
             count = await cursor.fetchone()
@@ -1100,7 +1135,7 @@ async def show_storage_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
             max_extensions = 1
             extensions_left = max_extensions - extension_count
         
-        storage_text = f"Хранилище {link_id[:8]}... ({file_count} файлов, {time_left}) от {creator_name}"
+        storage_text = f"Хранилище {link_id[:8]} ({file_count} файлов, {time_left}) от {creator_name}"
         keyboard.append([KeyboardButton(text=storage_text)])
         storage_info[storage_text] = {
             'link_id': link_id,
@@ -1418,6 +1453,9 @@ if __name__ == '__main__':
         print(f"Временные файлы: {TEMP_DIR}")
         print(f"Логи: {LOG_DIR}")
         print(f"Временные ссылки: {TEMP_LINKS_DIR}")
+
+        # Запускаем бота через asyncio для правильной обработки остановки
+        loop = asyncio.get_event_loop()
         
         loop.run_until_complete(app.initialize())
         loop.run_until_complete(app.updater.initialize())
