@@ -45,9 +45,9 @@ TOKEN = os.getenv('BOT_TOKEN')
 if not TOKEN:
     raise ValueError("Не указан токен бота в файле .env (BOT_TOKEN)")
 
-COUNT_ID = os.getenv('COUNT_ID') # Колличество символов link_id
+COUNT_ID = int(os.getenv('COUNT_ID')) # Колличество символов link_id
 if not COUNT_ID:
-    raise ValueError('Не указано количество символов-ID хранилища в файле .env(COUNT_ID).', 10)
+    raise ValueError('Не указано количество символов-ID хранилища в файле .env(COUNT_ID).')
 
 ADMIN_CODE = os.getenv('ADMIN_CODE')
 if not ADMIN_CODE:
