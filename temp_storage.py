@@ -19,6 +19,7 @@ DB_PATH = os.path.join(BOT_DIR, 'bot_users.db')
 TEMP_DIR = os.path.join(BOT_DIR, 'temp')
 LOG_DIR = os.path.join(BOT_DIR, 'logs')
 TEMP_LINKS_DIR = os.path.join(BOT_DIR, 'temp_links')
+Flag = False
 
 
 # Создаем директории логов, если они не существуют
@@ -68,7 +69,7 @@ WARNING_THRESHOLD = 10  # Порог для предупреждения адм�
 ADMIN_NOTIFICATION_INTERVAL = 60  # Интервал между уведомлениями администратора
 
 # Состояния разговора
-CAPTCHA, MENU, SETTINGS, TECH_COMMANDS, OTHER_COMMANDS, USER_MANAGEMENT, TEMP_LINK, TEMP_LINK_DURATION, TEMP_LINK_EXTEND, STORAGE_MANAGEMENT = range(10)
+CAPTCHA, MENU, SETTINGS, TECH_COMMANDS, OTHER_COMMANDS, USER_MANAGEMENT, TEMP_LINK, TEMP_LINK_DURATION, TEMP_LINK_EXTEND, STORAGE_MANAGEMENT, BROADCAST = range(11)
 
 # Роли пользователей
 class UserRole:
@@ -500,30 +501,42 @@ async def process_other_commands(update: Update, context: ContextTypes.DEFAULT_T
         return SETTINGS
     elif text == "Написать всем пользователям":
         await update.message.reply_text("Введите сообщение для рассылки:")
-        return OTHER_COMMANDS
+        return BROADCAST
     elif text == "Управление пользователями":
         return await show_users_list(update, context)
     elif text == "Управление хранилищами":
         return await show_storage_list(update, context)
     else:
-        # Отправляем сообщение всем пользователям
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('SELECT user_id FROM users WHERE is_verified = TRUE')
-        users = c.fetchall()
-        conn.close()
-        
-        success_count = 0
-        for user_id in users:
-            try:
-                await context.bot.send_message(chat_id=user_id[0], text=text)
-                success_count += 1
-            except Exception as e:
-                print(f"Ошибка отправки сообщения пользователю {user_id[0]}: {e}")
-        
-        await update.message.reply_text(f"Сообщение отправлено {success_count} пользователям.")
         await settings_command(update, context)
         return SETTINGS
+
+async def broadcast_heandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await check_admin_rights(update.effective_user.id):
+        await update.message.reply_text("У вас нет прав для выполнения этой команды.")
+        await show_menu(update, context)
+        return MENU
+    if not is_bot_enabled() and not is_admin(update.effective_user.id):
+        await update.message.reply_text("Бот находится на техническом обслуживании. Пожалуйста, подождите.")
+        return MENU
+    
+    text = update.message.text
+    # Отправляем сообщение всем пользователям
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT user_id FROM users WHERE is_verified = TRUE')
+    users = c.fetchall()
+    conn.close()
+    
+    success_count = 0
+    for user_id in users:
+        try:
+            await context.bot.send_message(chat_id=user_id[0], text=text)
+            success_count += 1
+        except Exception as e:
+            print(f"Ошибка отправки сообщения пользователю {user_id[0]}: {e}")
+    
+    await update.message.reply_text(f"Сообщение отправлено {success_count} пользователям.")
+    return OTHER_COMMANDS
 
 async def show_users_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = await get_all_users_async()
@@ -1438,6 +1451,7 @@ if __name__ == '__main__':
                 TEMP_LINK_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_temp_link_duration)],
                 TEMP_LINK_EXTEND: [MessageHandler(filters.TEXT & ~filters.COMMAND, extend_storage_duration)],
                 STORAGE_MANAGEMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_storage_management)],
+                BROADCAST: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_heandler)],
             },
             fallbacks=[
                 CommandHandler('start', start),
