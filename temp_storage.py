@@ -135,8 +135,7 @@ async def setup_database():
         # Создание таблицы bot_status
         await conn.execute('''CREATE TABLE IF NOT EXISTS bot_status
                  (id INTEGER PRIMARY KEY,
-                  status TEXT DEFAULT 'enabled',
-                  lines_to_keep INTEGER DEFAULT 10)''')
+                  status TEXT DEFAULT 'enabled')''')
         
         # Таблица temp_links
         await conn.execute('''CREATE TABLE IF NOT EXISTS temp_links
@@ -151,7 +150,7 @@ async def setup_database():
         cursor = await conn.execute('SELECT COUNT(*) FROM bot_status WHERE id = 1')
         count = await cursor.fetchone()
         if count[0] == 0:
-            await conn.execute('INSERT INTO bot_status (id, status, lines_to_keep) VALUES (1, "enabled", 10)')
+            await conn.execute('INSERT INTO bot_status (id, status) VALUES (1, "enabled")')
         
         # Проверка наличия поля extension_count
         cursor = await conn.execute("PRAGMA table_info(temp_links)")

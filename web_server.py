@@ -130,9 +130,6 @@ app.config['MAX_CONTENT_LENGTH'] = None
 app.config['UPLOAD_CHUNK_SIZE'] = int(os.getenv('UPLOAD_CHUNK_SIZE', 64)) * 1024  # по умолчанию 64 KB
 app.config['MAX_CHUNK_SIZE'] = int(os.getenv('MAX_CHUNK_SIZE', 2)) * 1024 * 1024  # по умолчанию 2 MB
 
-# Константа для количества строк по умолчанию
-DEFAULT_LINES_TO_KEEP = int(os.getenv('DEFAULT_LINES_TO_KEEP', 10))
-
 # Хранилище для rate limiting и защиты от брут-форса
 request_counters = defaultdict(lambda: {'count': 0, 'reset_time': time.time() + 60})
 failed_attempts = defaultdict(lambda: {'count': 0, 'blocked_until': 0})
@@ -345,7 +342,6 @@ async def init_db_async():
             # Создаем таблицу настроек пользователя, если её нет
             await conn.execute('''CREATE TABLE IF NOT EXISTS user_settings
                          (user_id INTEGER PRIMARY KEY,
-                          lines_to_keep INTEGER DEFAULT 10,
                           theme TEXT DEFAULT 'dark')''')
             
             # Проверяем, есть ли колонка theme
@@ -600,11 +596,11 @@ async def set_user_theme_async(user_id, theme):
     try:
         async with aiosqlite.connect(DB_PATH) as conn:
             await conn.execute('''INSERT OR REPLACE INTO user_settings 
-                         (user_id, theme, lines_to_keep) 
+                         (user_id, theme) 
                          VALUES (?, ?, 
-                                COALESCE((SELECT lines_to_keep FROM user_settings WHERE user_id = ?), 
+                                COALESCE((SELECT links_to_keep FROM user_settings WHERE user_id = ?), 
                                 ?))''', 
-                     (user_id, theme, user_id, DEFAULT_LINES_TO_KEEP))
+                     (user_id, theme, user_id))
             await conn.commit()
             logger.info(f"Тема '{theme}' успешно установлена для пользователя {user_id}")  # Добавлено логирование успеха
             return True
