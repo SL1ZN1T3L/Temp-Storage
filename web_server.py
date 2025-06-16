@@ -1651,8 +1651,8 @@ if __name__ == '__main__':
         logger.info("Запущен поток периодической очистки истекших хранилищ и сессий")
         
         # Запускаем сервер
-        logger.info("Запуск веб-сервера на 127.0.0.1:5000")
-        app.run(host='127.0.0.1', port=5000, threaded=True, debug=False)
+        logger.info("Запуск веб-сервера на 127.0.197.0:5000")
+        app.run(host='127.0.197.0', port=5000, threaded=True, debug=False)
     except Exception as e:
         logger.critical(f"Критическая ошибка при запуске сервера: {str(e)}")
         raise
